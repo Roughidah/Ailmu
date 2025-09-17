@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Homework Helper (POC)</title>
+    <link rel="stylesheet" href="./public/styles.css"/>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Homework Helper</h1>
+        <div class="selectors">
+          <label>Level
+            <select id="level">
+              <option>Kindergarten</option>
+              <option>Lower Secondary</option>
+              <option>Upper Secondary</option>
+            </select>
+          </label>
+          <label>Subject
+            <select id="subject">
+              <option>Math</option>
+              <option>Science</option>
+              <option>English</option>
+            </select>
+          </label>
+          <button id="newChat">Start Chat</button>
+        </div>
+      </header>
+
+      <main>
+        <aside class="sidebar">
+          <div class="user">
+            <label>User ID</label>
+            <input id="userId" value="haziq" />
+          </div>
+          <h3>Chats</h3>
+          <ul id="chatList"></ul>
+        </aside>
+
+        <section class="chat">
+          <div id="chatHeader" class="chat-header">No chat selected</div>
+          <div id="messages" class="messages"></div>
+          <div class="composer">
+            <textarea id="question" placeholder="Type your question..." rows="3"></textarea>
+            <button id="send">Send</button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./public/main.js"></script>
+  </body>
+</html>
