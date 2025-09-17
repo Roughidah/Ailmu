@@ -12,6 +12,8 @@ const els = {
   messages: document.getElementById('messages'),
   question: document.getElementById('question'),
   send: document.getElementById('send'),
+  upload: document.getElementById('upload'),
+  fileInput: document.getElementById('fileInput'),
 };
 
 function msgEl(role, content) {
@@ -90,6 +92,40 @@ els.send.onclick = async () => {
     els.messages.appendChild(msgEl('assistant', 'Network or server error.'));
   } finally {
     els.send.disabled = false;
+  }
+};
+
+els.upload.onclick = () => {
+  els.fileInput.click();
+};
+
+els.fileInput.onchange = async (event) => {
+  const file = event.target.files[0];
+  console.log("Selected file:", file);
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  els.upload.disabled = true;
+  els.upload.textContent = 'Uploading...';
+
+  try {
+    const res = await fetch(`${API_BASE}/api/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+    const data = await res.json();
+    if (data.ok) {
+      els.question.value = data.text;
+    } else {
+      alert('Error extracting text: ' + (data.error || 'Unknown'));
+    }
+  } catch (e) {
+    alert('Network or server error during file upload.');
+  } finally {
+    els.upload.disabled = false;
+    els.upload.textContent = 'Upload Image';
   }
 };
 

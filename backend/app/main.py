@@ -9,8 +9,13 @@ from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from pydantic import BaseModel, field_validator
 from openai import OpenAI, APIStatusError
 from flask import make_response
+import easyocr
+from PIL import Image, ImageOps
+
+reader = easyocr.Reader(['en'])
 
 load_dotenv()
+
 
 # Logging setup
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -160,6 +165,59 @@ def create_app():
     def health():
         return add_cors(make_response(jsonify({"ok": True, "service": "homework-helper-backend"}), 200), allowed_origin)
 
+    @app.route("/api/upload", methods=["POST", "OPTIONS"])
+    def upload_file():
+        if request.method == "OPTIONS":
+            return add_cors(make_response("", 204), allowed_origin)
+
+        if 'file' not in request.files:
+            return add_cors(make_response(jsonify({"ok": False, "error": "No file uploaded"}), 400), allowed_origin)
+
+        file = request.files['file']
+        if file.filename == '':
+            return add_cors(make_response(jsonify({"ok": False, "error": "Empty filename"}), 400), allowed_origin)
+
+        try:
+            # Open image
+            image = Image.open(file.stream)
+            
+            # Preprocess
+            image = image.convert('L')  # grayscale
+            image = ImageOps.autocontrast(image)
+            if min(image.size) < 800:
+                image = image.resize((image.width*2, image.height*2), Image.Resampling.LANCZOS)
+            
+            # OCR with EasyOCR
+            import numpy as np
+            img_np = np.array(image)
+            result = reader.readtext(img_np, detail=0)
+            raw_text = "\n".join(result)
+
+            logger.info(f"Raw OCR result: {raw_text!r}")
+
+            # Optional AI cleanup
+            system_prompt = (
+                "You are a text assistant. "
+                "The following text was extracted from an image and may have OCR errors. "
+                "Please correct spelling, punctuation, and formatting, "
+                "but do not change the meaning or remove any content."
+            )
+            cleaned_text = client.responses.create(
+                model=default_model,
+                input=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": raw_text}
+                ]
+            ).output_text
+
+            logger.info(f"Cleaned OCR result: {cleaned_text!r}")
+
+            return add_cors(make_response(jsonify({"ok": True, "text": cleaned_text}), 200), allowed_origin)
+
+        except Exception as e:
+            logger.error(f"OCR + AI cleanup error: {e}", exc_info=True)
+            return add_cors(make_response(jsonify({"ok": False, "error": str(e)}), 500), allowed_origin)
+            
     @app.route("/ask", methods=["POST", "OPTIONS"])
     def ask():
         start_time = time.time()

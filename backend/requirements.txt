@@ -3,3 +3,5 @@ sqlalchemy
 pydantic
 python-dotenv
 openai>=1.40.0
+pytesseract
+Pillow
